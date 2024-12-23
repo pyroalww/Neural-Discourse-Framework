@@ -1066,7 +1066,19 @@ function loadTestTable() {
     testTableBody.appendChild(tr);
   });
 }
-
+/**
+ * Tokenize metin (noktalama temizle, stop word at vs.)
+ * Basit bir örnek:
+ */
+ function tokenizeText(str) {
+  // Noktalama ve rakamları temizle
+  str = str.replace(/[0-9.,!?]/g, ' ');
+  // Stop kelimeler listesi (isteğe göre genişlet)
+  const stopWords = ["ve", "ama", "fakat", "ile", "bir", "mi", "nasıl", "etc"];
+  let tokens = str.split(/\s+/).map(t => t.trim()).filter(Boolean);
+  tokens = tokens.filter(t => !stopWords.includes(t));
+  return tokens;
+}
 evaluateTestBtn.addEventListener('click', () => {
   const mName = testModelSelect.value;
   if(!mName) {
