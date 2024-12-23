@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>PyroLLC Deep Learning Based Chat Training</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <!-- TensorFlow.js (4.x sürümü) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.7.0/dist/tf.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0; 
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f7f9fa;
+      color: #333;
+    }
+    header {
+      background: #2980b9;
+      color: #fff;
+      text-align: center;
+      padding: 16px;
+      font-size: 22px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .container {
+      width: 95%;
+      max-width: 1300px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .nav-tabs {
+      display: flex;
+      background: #ecf0f1;
+      border-bottom: 1px solid #ccc;
+    }
+    .nav-tabs button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background: transparent;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .nav-tabs button.active {
+      background: #fff;
+      border-bottom: 3px solid #2980b9;
+    }
+    .nav-tabs button:hover {
+      background: #f2f2f2;
+    }
+    .section {
+      display: none;
+      padding: 16px;
+      flex: 1;
+    }
+    .section.active {
+      display: block;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 4px;
+      color: #2980b9;
+    }
+    .block {
+      background: #fafafa;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border: 1px solid #eee;
+    }
+    .block h4 {
+      margin: 0 0 5px 0;
+      font-size: 16px;
+      font-weight: bold;
+      color: #444;
+    }
+    label {
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 8px;
+      display: block;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin: 4px 0;
+      font-size: 14px;
+    }
+    select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      margin: 4px 0;
+    }
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      background: #3498db;
+      color: #fff;
+      transition: background 0.2s;
+      margin-top: 5px;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .messages {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .user-msg,
+    .bot-msg {
+      max-width: 75%;
+      padding: 10px;
+      border-radius: 6px;
+      margin: 2px 0;
+    }
+    .user-msg {
+      align-self: flex-end;
+      background: #d1e7ff;
+    }
+    .bot-msg {
+      align-self: flex-start;
+      background: #ffefc7;
+    }
+    .input-area {
+      margin-top: 10px;
+      display: flex;
+      gap: 6px;
+    }
+    .input-area input {
+      flex: 1;
+    }
+    .training-logs {
+      max-height: 350px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 13px;
+    }
+    .training-logs div {
+      margin-bottom: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    table thead {
+      background: #f9f9f9;
+      border-bottom: 2px solid #ccc;
+    }
+    table th,
+    table td {
+      padding: 8px;
+      border: 1px solid #eee;
+      text-align: left;
+    }
+    table tbody tr:nth-child(even) {
+      background: #f7f7f7;
+    }
+    .info-text {
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .highlight {
+      color: #2980b9;
+      font-weight: bold;
+    }
+    footer {
+      text-align: center;
+      font-size: 14px;
+      padding: 8px;
+      color: #888;
+    }
+    .correct-btn {
+      background: #2ecc71;
+    }
+    .incorrect-btn {
+      background: #e74c3c;
+    }
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .flex-col {
+      flex:1;
+      min-width:150px;
+    }
+
+    /* Yeni butonlar (içe/dışa aktar) için stiller */
+    .export-btn {
+      background: #27ae60;
+      margin-left: 10px;
+    }
+    .export-btn:hover {
+      background: #229954;
+    }
+    .import-btn {
+      background: #8e44ad;
+    }
+    .import-btn:hover {
+      background: #71368a;
+    }
+  </style>
+</head>
+<body>
+<header>PyroLLC Deep Learning Based Chat Training</header>
+
+<div class="container">
+  <!-- Sekme Butonları -->
+  <div class="nav-tabs">
+    <button id="tabTrain" class="active">Eğitim Modu</button>
+    <button id="tabChat">Sohbet Modu</button>
+    <button id="tabTest">Test Modu</button>
+    <button id="tabLogs">Loglar</button>
+  </div>
+
+  <!-- EĞİTİM MODU SECTION -->
+  <div id="sectionTrain" class="section active">
+    <div class="section-title">Eğitim Modu</div>
+
+    <!-- Model Seç / Yeni Model Oluştur -->
+    <div class="block">
+      <h4>Model Seçimi / Oluştur</h4>
+      <label for="modelSelect">Var Olan Modeller:</label>
+      <select id="modelSelect"></select>
+      <p class="info-text">Buradan önceden kaydettiğin (veya oluşturduğun) modelleri seçip veri ekleyebilirsin.</p>
+
+      <label for="newModelName">Yeni Model Adı:</label>
+      <input type="text" id="newModelName" placeholder="örn: 'model_v1'">
+      <button id="createModelBtn" style="background:#8e44ad;">Yeni Model Oluştur</button>
+      <p class="info-text">
+        Bu butona basınca sıfırdan yeni bir model tanımlanır (veri seti boş başlar).
+      </p>
+    </div>
+
+    <!-- Soru-Cevap Ekleme Bloğu -->
+    <div class="block">
+      <h4>Soru - Cevap Ekle</h4>
+      <input type="text" id="trainQuestion" placeholder="Soru">
+      <input type="text" id="trainAnswer" placeholder="Cevap">
+      <button id="addTrainingPairBtn">Tekli Eğitim Kaydı Ekle</button>
+      <p class="info-text">
+        Benzer soruları birden fazla kez eklemek, modelin 
+        <span class="highlight">öğrenmesini güçlendirebilir</span>.  
+        Embedding katmanı, bu verilerden kelime anlam ilişkilerini çıkarır.
+      </p>
+    </div>
+
+    <!-- Toplu JSON Ekleme Bloğu -->
+    <div class="block">
+      <h4>Toplu JSON Yükle</h4>
+      <p class="info-text">
+        Format: <code>[{"question":"Merhaba","answer":"Selam!"},...]</code>
+      </p>
+      <input type="file" id="jsonFileInput" accept=".json">
+      <button id="uploadJsonBtn">JSON’dan Yükle</button>
+      <p class="info-text">
+        Bu işlem mevcut verilere ekleme yapar.
+      </p>
+    </div>
+
+    <!-- Eğitim Verisi Tablosu -->
+    <div class="block">
+      <h4>Mevcut Eğitim Verisi (<span id="trainingCount">0</span> kayıt)</h4>
+      <div style="overflow-x:auto;">
+        <table id="trainingTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Soru</th>
+              <th>Cevap</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <!-- Veriyi dışa aktarma butonu -->
+      <button id="exportTrainingDataBtn" class="export-btn">Veriyi Dışa Aktar (JSON)</button>
+      <p class="info-text">
+        Bu buton, seçili modelin eğitim verilerini JSON dosyası olarak indirmenizi sağlar.
+      </p>
+    </div>
+
+    <!-- Eğitim Ayarları ve Modeli Eğit Bloğu -->
+    <div class="block">
+      <h4>Eğitim Ayarları</h4>
+      <div class="flex-row">
+        <div class="flex-col">
+          <label for="epochsInput">Epochs:</label>
+          <input type="number" id="epochsInput" value="10" min="1" max="100">
+        </div>
+        <div class="flex-col">
+          <label for="batchSizeInput">Batch Size:</label>
+          <input type="number" id="batchSizeInput" value="8" min="1" max="128">
+        </div>
+        <div class="flex-col">
+          <label for="learningRateInput">Learning Rate:</label>
+          <input type="text" id="learningRateInput" value="0.001">
+        </div>
+        <div class="flex-col">
+          <label for="embeddingDimInput">Embedding Boyutu:</label>
+          <input type="number" id="embeddingDimInput" value="16" min="2" max="128">
+        </div>
+      </div>
+      <button id="trainModelBtn" style="background:#27ae60;">Modeli Eğit</button>
+      <div id="trainingInfo" style="margin-top:6px; font-size:14px; color:#333;"></div>
+      <p class="info-text">
+        Embedding katmanı, kelimeleri <span class="highlight">vektörel forma</span> dönüştürür.  
+        Epoch sayısı arttıkça model veriyi daha çok “görür” (fakat fazla epoch aşırı öğrenmeye neden olabilir).
+      </p>
+    </div>
+
+  </div>
+
+  <!-- SOHBET SECTION -->
+  <div id="sectionChat" class="section">
+    <div class="section-title">Sohbet Modu</div>
+
+    <!-- Model Seçimi -->
+    <div class="block">
+      <h4>Kullanılacak Model Seç</h4>
+      <select id="chatModelSelect"></select>
+      <p class="info-text">
+        Sohbette hangi modeli kullanmak istediğini seç. Model bellekte yüklü değilse eğitmen veya yeniden yüklemen gerekebilir.
+      </p>
+    </div>
+
+    <div class="messages chat-container" id="messagesBox"></div>
+    <div class="input-area">
+      <input type="text" id="chatInput" placeholder="Sohbet mesajınızı yazın...">
+      <button id="sendBtn">Gönder</button>
+    </div>
+
+    <!-- Doğruluk Geri Besleme Bloğu -->
+    <div class="block" id="feedbackBlock" style="margin-top:12px;">
+      <h4>Üretilen Çıktı Değerlendirmesi</h4>
+      <p class="info-text">
+        Son bot cevabı doğru mu yanlış mı? Yanlış ise doğru cevabı girip modele ek verilerle yeniden eğitebilirsin.
+      </p>
+      <div style="display:flex; gap:6px; margin-bottom:6px;">
+        <button class="correct-btn" id="correctBtn">Doğru</button>
+        <button class="incorrect-btn" id="incorrectBtn">Yanlış</button>
+      </div>
+      <input type="text" id="correctAnswerInput" placeholder="Yanlışsa doğru cevabı giriniz">
+      <button id="updateWithFeedbackBtn" style="background:#8e44ad;">Yanlışsa Veriye Ekle & Tekrar Eğit</button>
+    </div>
+  </div>
+
+  <!-- TEST SECTION -->
+  <div id="sectionTest" class="section">
+    <div class="section-title">Test Modu</div>
+    <div class="block">
+      <h4>Testte Kullanılacak Modeli Seç</h4>
+      <select id="testModelSelect"></select>
+      <p class="info-text">
+        Test yaparken hangi modeli kullanacağını buradan seç.
+      </p>
+    </div>
+    <div class="block">
+      <h4>Test Verisi (Soru - Gerçek Cevap) Yükle</h4>
+      <p class="info-text">
+        Format: <code>[{"question":"Merhaba","answer":"Selam!"}, ...]</code>
+      </p>
+      <input type="file" id="testJsonFileInput" accept=".json">
+      <button id="uploadTestJsonBtn">JSON’dan Test Verisi Yükle</button>
+      <p class="info-text">
+        Bu veriler geçici olarak belleğe alınır ve seçilen modelin doğruluğunu ölçmek için kullanılır.
+      </p>
+    </div>
+    <div class="block">
+      <h4>Yüklenen Test Verisi (<span id="testDataCount">0</span> kayıt)</h4>
+      <div style="overflow-x:auto;">
+        <table id="testTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Soru</th>
+              <th>Gerçek Cevap</th>
+              <th>Model Tahmini</th>
+              <th>Doğru mu?</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <button id="evaluateTestBtn" style="background:#9b59b6; margin-top:10px;">Testi Çalıştır</button>
+    </div>
+    <div class="block">
+      <h4>Test Sonucu</h4>
+      <div id="testResult" style="font-size:14px;"></div>
+    </div>
+  </div>
+
+  <!-- LOGS SECTION -->
+  <div id="sectionLogs" class="section">
+    <div class="section-title">Loglar (Eğitim, Sohbet, Test)</div>
+    <div class="training-logs" id="trainingLogs"></div>
+  </div>
+
+</div>
+
+<footer>www.pyrollc.com.tr (PyroLLC) | v4.7 | Optimized for Turkish</footer>
+
+<script>
+///////////////////////////////////////////////////////////////////////////////////////////////
+// 1) GLOBALLER, LOCALSTORAGE
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+const STORAGE_KEY_MODELS = "PyroLLC_Simsimi_ModelsUltra";
+const STORAGE_KEY_LOGS   = "PyroLLC_Simsimi_LogsUltra";
+
+// logs:
+let logsArr = JSON.parse(localStorage.getItem(STORAGE_KEY_LOGS)) || [];
+
+// modelsStore:
+// {
+//    "model_v1": { trainingData: [...], wordIndex: {}, label2answer: {}, currentWordIndex: 1 },
+//    "model_v2": {...}
+// }
+let modelsStore = JSON.parse(localStorage.getItem(STORAGE_KEY_MODELS)) || {};
+
+// TF.js model nesnelerini bellekte tutalım:
+let activeModels = {};
+
+// Test verisi:
+let testData = [];
+
+// DOM Elemanları
+const tabTrain = document.getElementById('tabTrain');
+const tabChat  = document.getElementById('tabChat');
+const tabTest  = document.getElementById('tabTest');
+const tabLogs  = document.getElementById('tabLogs');
+
+const sectionTrain = document.getElementById('sectionTrain');
+const sectionChat  = document.getElementById('sectionChat');
+const sectionTest  = document.getElementById('sectionTest');
+const sectionLogs  = document.getElementById('sectionLogs');
+
+const modelSelect     = document.getElementById('modelSelect');
+const chatModelSelect = document.getElementById('chatModelSelect');
+const testModelSelect = document.getElementById('testModelSelect');
+const newModelName    = document.getElementById('newModelName');
+const createModelBtn  = document.getElementById('createModelBtn');
+
+const trainQuestion   = document.getElementById('trainQuestion');
+const trainAnswer     = document.getElementById('trainAnswer');
+const addTrainingPairBtn   = document.getElementById('addTrainingPairBtn');
+const jsonFileInput        = document.getElementById('jsonFileInput');
+const uploadJsonBtn        = document.getElementById('uploadJsonBtn');
+const trainingTableBody    = document.querySelector('#trainingTable tbody');
+const trainingCountSpan    = document.getElementById('trainingCount');
+const exportTrainingDataBtn= document.getElementById('exportTrainingDataBtn');
+
+const epochsInput       = document.getElementById('epochsInput');
+const batchSizeInput    = document.getElementById('batchSizeInput');
+const learningRateInput = document.getElementById('learningRateInput');
+const embeddingDimInput = document.getElementById('embeddingDimInput');
+const trainModelBtn     = document.getElementById('trainModelBtn');
+const trainingInfo      = document.getElementById('trainingInfo');
+
+const chatInput         = document.getElementById('chatInput');
+const sendBtn           = document.getElementById('sendBtn');
+const messagesBox       = document.getElementById('messagesBox');
+
+const correctBtn        = document.getElementById('correctBtn');
+const incorrectBtn      = document.getElementById('incorrectBtn');
+const correctAnswerInput= document.getElementById('correctAnswerInput');
+const updateWithFeedbackBtn= document.getElementById('updateWithFeedbackBtn');
+
+const testJsonFileInput = document.getElementById('testJsonFileInput');
+const uploadTestJsonBtn = document.getElementById('uploadTestJsonBtn');
+const testDataCountSpan = document.getElementById('testDataCount');
+const testTableBody     = document.getElementById('testTable').querySelector('tbody');
+const evaluateTestBtn   = document.getElementById('evaluateTestBtn');
+const testResult        = document.getElementById('testResult');
+
+const trainingLogs      = document.getElementById('trainingLogs');
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// 2) SEKME GEÇİŞİ VE LOG MEKANİZMASI
+///////////////////////////////////////////////////////////////////////////////////////////////
+function showSection(section) {
+  [sectionTrain, sectionChat, sectionTest, sectionLogs].forEach(sec => sec.classList.remove('active'));
+  section.classList.add('active');
+}
+tabTrain.addEventListener('click', () => {
+  [tabTrain, tabChat, tabTest, tabLogs].forEach(t => t.classList.remove('active'));
+  tabTrain.classList.add('active');
+  showSection(sectionTrain);
+});
+tabChat.addEventListener('click', () => {
+  [tabTrain, tabChat, tabTest, tabLogs].forEach(t => t.classList.remove('active'));
+  tabChat.classList.add('active');
+  showSection(sectionChat);
+});
+tabTest.addEventListener('click', () => {
+  [tabTrain, tabChat, tabTest, tabLogs].forEach(t => t.classList.remove('active'));
+  tabTest.classList.add('active');
+  showSection(sectionTest);
+});
+tabLogs.addEventListener('click', () => {
+  [tabTrain, tabChat, tabTest, tabLogs].forEach(t => t.classList.remove('active'));
+  tabLogs.classList.add('active');
+  showSection(sectionLogs);
+});
+
+function addLog(msg) {
+  const timeStamp = new Date().toLocaleString();
+  const logItem   = `[${timeStamp}] ${msg}`;
+  logsArr.push(logItem);
+  localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(logsArr));
+
+  const div = document.createElement('div');
+  div.textContent = logItem;
+  trainingLogs.appendChild(div);
+  trainingLogs.scrollTop = trainingLogs.scrollHeight;
+}
+function loadLogs() {
+  logsArr.forEach(item => {
+    const div = document.createElement('div');
+    div.textContent = item;
+    trainingLogs.appendChild(div);
+  });
+}
+loadLogs();
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// 3) MODEL STORE YÖNETİMİ
+///////////////////////////////////////////////////////////////////////////////////////////////
+function refreshModelSelects() {
+  [modelSelect, chatModelSelect, testModelSelect].forEach(sel => {
+    sel.innerHTML = '';
+  });
+  const modelNames = Object.keys(modelsStore);
+  modelNames.forEach(mName => {
+    let opt1 = document.createElement('option');
+    opt1.value = mName;
+    opt1.textContent = mName;
+    modelSelect.appendChild(opt1);
+
+    let opt2 = opt1.cloneNode(true);
+    chatModelSelect.appendChild(opt2);
+
+    let opt3 = opt1.cloneNode(true);
+    testModelSelect.appendChild(opt3);
+  });
+}
+refreshModelSelects();
+
+function getSelectedModelName(selType="train") {
+  if(selType==="train") return modelSelect.value;
+  else if(selType==="chat") return chatModelSelect.value;
+  else if(selType==="test") return testModelSelect.value;
+  return null;
+}
+function getModelStoreObj(mName) {
+  return modelsStore[mName] || null;
+}
+
+// Yeni model oluştur
+createModelBtn.addEventListener('click', () => {
+  const mName = newModelName.value.trim();
+  if(!mName) {
+    alert("Lütfen bir model adı giriniz.");
+    return;
+  }
+  if(modelsStore[mName]) {
+    alert("Bu model adı zaten var. Farklı bir isim deneyin.");
+    return;
+  }
+  modelsStore[mName] = {
+    trainingData: [],
+    wordIndex: {},
+    label2answer: {},
+    currentWordIndex: 1
+  };
+  localStorage.setItem(STORAGE_KEY_MODELS, JSON.stringify(modelsStore));
+  addLog(`Yeni model oluşturuldu: ${mName}`);
+  refreshModelSelects();
+  newModelName.value = '';
+  alert("Yeni model oluşturuldu! Şimdi bu modeli seçip eğitim verisi ekleyebilirsin.");
+});
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// 4) EĞİTİM VERİSİ GÖSTERME / EKLEME
+///////////////////////////////////////////////////////////////////////////////////////////////
+function loadTrainingTable(mName) {
+  const mObj = getModelStoreObj(mName);
+  if(!mObj) {
+    trainingTableBody.innerHTML = '';
+    trainingCountSpan.textContent = '0';
+    return;
+  }
+  const data = mObj.trainingData;
+  trainingTableBody.innerHTML = '';
+  data.forEach((item, idx) => {
+    const tr = document.createElement('tr');
+    let tdI = document.createElement('td');
+    let tdQ = document.createElement('td');
+    let tdA = document.createElement('td');
+
+    tdI.textContent = (idx+1).toString();
+    tdQ.textContent = item.question;
+    tdA.textContent = item.answer;
+    tr.appendChild(tdI);
+    tr.appendChild(tdQ);
+    tr.appendChild(tdA);
+    trainingTableBody.appendChild(tr);
+  });
+  trainingCountSpan.textContent = data.length;
+}
+
+// Tekli ekleme
+addTrainingPairBtn.addEventListener('click', () => {
+  const mName = getSelectedModelName("train");
+  if(!mName) {
+    alert("Önce model seç veya oluştur.");
+    return;
+  }
+  const mObj = getModelStoreObj(mName);
+  if(!mObj) {
+    alert("Model bulunamadı.");
+    return;
+  }
+  const q = trainQuestion.value.trim();
+  const a = trainAnswer.value.trim();
+  if(!q || !a) {
+    alert("Soru ve cevap girmelisin.");
+    return;
+  }
+  mObj.trainingData.push({ question: q, answer: a });
+  localStorage.setItem(STORAGE_KEY_MODELS, JSON.stringify(modelsStore));
+  addLog(`Model=${mName}: yeni veri eklendi. S="${q}", C="${a}"`);
+
+  trainQuestion.value = '';
+  trainAnswer.value   = '';
+  loadTrainingTable(mName);
+  alert("Eğitim kaydı eklendi!");
+});
+
+// JSON yükleme
+uploadJsonBtn.addEventListener('click', () => {
+  const mName = getSelectedModelName("train");
+  if(!mName) {
+    alert("Bir model seçmelisin!");
+    return;
+  }
+  const mObj = getModelStoreObj(mName);
+  if(!mObj) {
+    alert("Model bulunamadı.");
+    return;
+  }
+  if(!jsonFileInput.files.length) {
+    alert("Lütfen JSON dosyası seçiniz.");
+    return;
+  }
+  const file = jsonFileInput.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let arr = JSON.parse(e.target.result);
+      if(!Array.isArray(arr)) {
+        alert("Geçersiz format: Dizi bekleniyor.");
+        return;
+      }
+      let count = 0;
+      arr.forEach(item => {
+        if(item.question && item.answer) {
+          mObj.trainingData.push({ question:item.question, answer:item.answer });
+          count++;
+        }
+      });
+      localStorage.setItem(STORAGE_KEY_MODELS, JSON.stringify(modelsStore));
+      loadTrainingTable(mName);
+      addLog(`Model=${mName}: JSON'dan ${count} kayıt eklendi.`);
+      alert(`${count} kayıt eklendi!`);
+      jsonFileInput.value='';
+    } catch(err) {
+      console.error(err);
+      alert("JSON parse hatası. Dosyayı kontrol ediniz.");
+    }
+  };
+  reader.readAsText(file);
+});
+
+// Eğitim verisini dışa aktarma (JSON indirme)
+exportTrainingDataBtn.addEventListener('click', () => {
+  const mName = getSelectedModelName("train");
+  if(!mName) {
+    alert("Model seçmelisin!");
+    return;
+  }
+  const mObj = getModelStoreObj(mName);
+  if(!mObj || !mObj.trainingData.length) {
+    alert("Bu modelde veri yok.");
+    return;
+  }
+  // JSON string oluştur
+  let dataStr = JSON.stringify(mObj.trainingData, null, 2);
+  // Blob oluştur
+  let blob = new Blob([dataStr], {type: 'application/json'});
+  let url  = URL.createObjectURL(blob);
+
+  // Link yaratıp tıklatalım
+  let a = document.createElement('a');
+  a.href = url;
+  a.download = `${mName}_trainingData.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  addLog(`Model=${mName}: Eğitim verisi dışa aktarıldı (indirildi).`);
+});
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// 5) MODELİ EĞİT
+///////////////////////////////////////////////////////////////////////////////////////////////
+trainModelBtn.addEventListener('click', async () => {
+  const mName = getSelectedModelName("train");
+  if(!mName) {
+    alert("Model seçiniz!");
+    return;
+  }
+  const mObj = getModelStoreObj(mName);
+  if(!mObj.trainingData || mObj.trainingData.length===0) {
+    alert("Hiç veri yok, önce veri ekle.");
+    return;
+  }
+
+  const epochsVal       = parseInt(epochsInput.value.trim()) || 10;
+  const batchSizeVal    = parseInt(batchSizeInput.value.trim()) || 8;
+  const learningRateVal = parseFloat(learningRateInput.value.trim()) || 0.001;
+  const embedDimVal     = parseInt(embeddingDimInput.value.trim()) || 16;
+
+  trainingInfo.innerHTML = "Model hazırlanıyor...";
+  addLog(`Model=${mName}: Eğitim başlıyor. epochs=${epochsVal}, batchSize=${batchSizeVal}, lr=${learningRateVal}, embedDim=${embedDimVal}`);
+
+  // 1) wordIndex vs sıfırla
+  mObj.wordIndex = {};
+  mObj.label2answer = {};
+  mObj.currentWordIndex = 1;
+
+  let data = mObj.trainingData;
+  let allTokensArr = [];
+  let labelsArr    = [];
+
+  for(let i=0; i<data.length; i++){
+    let q = data[i].question.toLowerCase();
+    let a = data[i].answer;
+    let label = i; // her veri unique label
+
+    mObj.label2answer[label] = a;
+
+    let tokens = tokenizeText(q);
+    tokens.forEach(tok => {
+      if(!mObj.wordIndex[tok]) {
+        mObj.wordIndex[tok] = mObj.currentWordIndex++;
+      }
+    });
+    allTokensArr.push(tokens);
+    labelsArr.push(label);
+  }
+
+  const maxLen = 12;
+  function encodeTokens(tokens){
+    let arr = new Array(maxLen).fill(0);
+    for(let i=0; i<tokens.length && i<maxLen; i++){
+      let w = tokens[i];
+      arr[i] = mObj.wordIndex[w] || 0;
+    }
+    return arr;
+  }
+
+  let xs = [];
+  let ys = [];
+  for(let i=0; i<allTokensArr.length; i++){
+    xs.push(encodeTokens(allTokensArr[i]));
+    ys.push(labelsArr[i]);
+  }
+  let xsTensor = tf.tensor2d(xs);
+  let ysTensor = tf.oneHot(tf.tensor1d(ys, 'int32'), data.length);
+
+  // 2) model kur
+  const optimizer = tf.train.adam(learningRateVal);
+  let localModel = tf.sequential();
+
+  // Embedding + globalAveragePooling1d (dikkat: "1d" küçük harfle)
+  localModel.add(tf.layers.embedding({
+    inputDim: mObj.currentWordIndex + 1,
+    outputDim: embedDimVal,
+    inputLength: maxLen
+  }));
+  localModel.add(tf.layers.globalAveragePooling1d()); // <--- düzeltilmiş satır
+  localModel.add(tf.layers.dense({units:32, activation:'relu'}));
+  localModel.add(tf.layers.dense({units:data.length, activation:'softmax'}));
+
+  localModel.compile({
+    optimizer,
+    loss: 'categoricalCrossentropy',
+    metrics: ['accuracy']
+  });
+
+  trainingInfo.innerHTML = "Model eğitimi başladı...";
+  await localModel.fit(xsTensor, ysTensor, {
+    epochs: epochsVal,
+    batchSize: batchSizeVal,
+    shuffle: true,
+    callbacks: {
+      onEpochEnd: (epoch, logs) => {
+        trainingInfo.innerHTML = `
+          Epoch ${epoch+1}/${epochsVal}
+          | Loss=${logs.loss.toFixed(3)}
+          | Acc=${logs.acc.toFixed(3)}
+        `;
+      }
+    }
+  });
+  xsTensor.dispose();
+  ysTensor.dispose();
+
+  // 3) Bellekte sakla
+  activeModels[mName] = localModel;
+
+  // 4) localStorage'a model meta verilerini kaydet
+  localStorage.setItem(STORAGE_KEY_MODELS, JSON.stringify(modelsStore));
+  trainingInfo.innerHTML += `<br>Eğitim tamamlandı! (Veri sayısı=${data.length})`;
+  addLog(`Model=${mName}: Eğitim bitti, veri sayısı=${data.length}`);
+});
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// 6) SOHBET MODU
+///////////////////////////////////////////////////////////////////////////////////////////////
+function predictAnswer(mName, userText){
+  const mObj = getModelStoreObj(mName);
+  if(!mObj) {
+    return {replyText:"Bu model kaydı bulunamadı.", allScores:null};
+  }
+  let localModel = activeModels[mName];
+  if(!localModel) {
+    return {replyText:"Model bellekte yüklü değil. Lütfen eğitin veya tekrar yükleyin.", allScores:null};
+  }
+  if(!mObj.trainingData.length) {
+    return {replyText:"Modelin veri seti boş.", allScores:null};
+  }
+
+  let tokens = tokenizeText(userText.toLowerCase());
+  const maxLen = 12;
+  let arr = new Array(maxLen).fill(0);
+  for(let i=0; i<tokens.length && i<maxLen; i++){
+    let w = tokens[i];
+    arr[i] = mObj.wordIndex[w] || 0;
+  }
+  let inputTensor = tf.tensor2d([arr]);
+  let output = localModel.predict(inputTensor);
+  let data = output.dataSync();
+  inputTensor.dispose();
+  output.dispose();
+
+  // skorlar
+  let scoresObj = {};
+  for(let i=0; i<data.length; i++){
+    scoresObj[i] = data[i].toFixed(4);
+  }
+
+  // en büyük
+  let maxIndex = 0;
+  let maxVal   = data[0];
+  for(let i=1; i<data.length; i++){
+    if(data[i] > maxVal) {
+      maxVal = data[i];
+      maxIndex = i;
+    }
+  }
+  let ans = mObj.label2answer[maxIndex] || "Cevap veremiyorum...";
+  return {replyText:ans, allScores:scoresObj};
+}
+
+// Mesaj ekrana bas
+function appendMessage(msg, isUser=true){
+  const div = document.createElement('div');
+  div.className = isUser ? 'user-msg' : 'bot-msg';
+  div.textContent = msg;
+  messagesBox.appendChild(div);
+  messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+sendBtn.addEventListener('click', () => {
+  const mName = chatModelSelect.value;
+  if(!mName) {
+    alert("Sohbet için bir model seçin!");
+    return;
+  }
+  const userMsg = chatInput.value.trim();
+  if(!userMsg) return;
+  appendMessage(userMsg, true);
+  chatInput.value = '';
+
+  const {replyText, allScores} = predictAnswer(mName, userMsg);
+  setTimeout(() => {
+    appendMessage(replyText, false);
+    addLog(`SOHBET: Model=${mName}, User="${userMsg}" => Bot="${replyText}" | Scores=${JSON.stringify(allScores)}`);
+  }, 300);
+});
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// 7) Doğruluk Geri Besleme
+///////////////////////////////////////////////////////////////////////////////////////////////
+correctBtn.addEventListener('click', () => {
+  alert("Teşekkürler! Bu cevap doğru kabul edildi. Geri besleme kaydı alındı.");
+});
+incorrectBtn.addEventListener('click', () => {
+  alert("Yanlış cevap işaretlendi. Doğru cevabı girip butona basarak modele ekleyebilirsin.");
+});
+
+updateWithFeedbackBtn.addEventListener('click', () => {
+  const mName = chatModelSelect.value;
+  if(!mName) {
+    alert("Önce model seç.");
+    return;
+  }
+  const length = messagesBox.children.length;
+  if(length < 2) {
+    alert("Sohbet geçmişi yok, son cevabı bulamıyorum.");
+    return;
+  }
+  // 1 user msg + 1 bot msg => bu ikili
+  // son 2 mesaj: user, bot
+  let last = messagesBox.children[length-1];
+  let secondLast = messagesBox.children[length-2];
+
+  let userMsg = '';
+  let botMsg  = '';
+
+  if(last.classList.contains('bot-msg')) {
+    botMsg  = last.textContent;
+    userMsg = secondLast.textContent;
+  } else {
+    if(length<3) {
+      alert("Yeterli mesaj yok.");
+      return;
+    }
+    botMsg  = messagesBox.children[length-2].textContent;
+    userMsg = messagesBox.children[length-3].textContent;
+  }
+
+  let correctAns = correctAnswerInput.value.trim();
+  if(!correctAns) {
+    alert("Lütfen doğru cevabı gir.");
+    return;
+  }
+
+  // Seçili modele ekle
+  const mObj = getModelStoreObj(mName);
+  mObj.trainingData.push({ question: userMsg, answer: correctAns });
+  localStorage.setItem(STORAGE_KEY_MODELS, JSON.stringify(modelsStore));
+  addLog(`FEEDBACK: Model=${mName}, Soru="${userMsg}", DoğruCevap="${correctAns}" => veriye eklendi.`);
+
+  correctAnswerInput.value = '';
+  alert("Yeni veri kaydedildi. Modeli tekrar eğitiyoruz...");
+  trainModelBtn.click();  // Mevcut "Eğit" butonuna basmış gibi
+});
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// 8) TEST MODU
+///////////////////////////////////////////////////////////////////////////////////////////////
+uploadTestJsonBtn.addEventListener('click', () => {
+  if(!testJsonFileInput.files.length) {
+    alert("Bir JSON test dosyası seç!");
+    return;
+  }
+  const file = testJsonFileInput.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let arr = JSON.parse(e.target.result);
+      if(!Array.isArray(arr)) {
+        alert("Geçersiz format: dizi bekleniyor.");
+        return;
+      }
+      testData = [];
+      arr.forEach(item => {
+        if(item.question && item.answer) {
+          testData.push({question: item.question, answer: item.answer});
+        }
+      });
+      loadTestTable();
+      testJsonFileInput.value = '';
+      addLog(`Test verisi yüklendi: ${testData.length} kayıt`);
+      alert(`${testData.length} adet test kaydı yüklendi!`);
+    } catch(err) {
+      console.error(err);
+      alert("Test JSON parse hatası!");
+    }
+  };
+  reader.readAsText(file);
+});
+
+function loadTestTable() {
+  testDataCountSpan.textContent = testData.length;
+  testTableBody.innerHTML = '';
+  testData.forEach((item, idx) => {
+    const tr = document.createElement('tr');
+    let tdI = document.createElement('td');
+    let tdQ = document.createElement('td');
+    let tdA = document.createElement('td');
+    let tdP = document.createElement('td');
+    let tdC = document.createElement('td');
+
+    tdI.textContent = (idx+1).toString();
+    tdQ.textContent = item.question;
+    tdA.textContent = item.answer;
+    tdP.textContent = "-";
+    tdC.textContent = "-";
+
+    tr.appendChild(tdI);
+    tr.appendChild(tdQ);
+    tr.appendChild(tdA);
+    tr.appendChild(tdP);
+    tr.appendChild(tdC);
+    testTableBody.appendChild(tr);
+  });
+}
+
+evaluateTestBtn.addEventListener('click', () => {
+  const mName = testModelSelect.value;
+  if(!mName) {
+    alert("Test edeceğin modeli seç!");
+    return;
+  }
+  if(!testData.length) {
+    alert("Test verisi boş. Lütfen JSON yükle.");
+    return;
+  }
+  let correctCount = 0;
+  for(let i=0; i<testData.length; i++){
+    let item = testData[i];
+    let row = testTableBody.children[i];
+    let {replyText} = predictAnswer(mName, item.question);
+    row.children[3].textContent = replyText;
+    let isCorrect = (replyText.trim().toLowerCase() === item.answer.trim().toLowerCase());
+    row.children[4].textContent = isCorrect ? "✔️" : "❌";
+    if(isCorrect) correctCount++;
+  }
+  let accuracy = (correctCount / testData.length)*100;
+  testResult.innerHTML = `Doğru: ${correctCount}/${testData.length} => Accuracy: ${accuracy.toFixed(2)}%`;
+  addLog(`TEST: Model=${mName}, Toplam=${testData.length}, Doğru=${correctCount}, Accuracy=${accuracy.toFixed(2)}%`);
+});
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// SAYFA BAŞLANGICI
+///////////////////////////////////////////////////////////////////////////////////////////////
+function initApp() {
+  // Varsayılan sekme: Eğitim
+  showSection(sectionTrain);
+  // Model listeleri
+  refreshModelSelects();
+  // Loglar yüklendi
+  loadLogs();
+}
+initApp();
+</script>
+</body>
+</html>
